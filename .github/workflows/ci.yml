@@ -1,0 +1,99 @@
+name: AutoBracket CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: guard-lint-type-test-build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CI: "true"
+      NEXT_TELEMETRY_DISABLED: "1"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - name: Activate locked pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@11.12.0 --activate
+          corepack pnpm --version
+
+      - name: Locate pnpm store
+        id: pnpm-store
+        run: echo "store_path=$(corepack pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-store.outputs.store_path }}
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: ${{ runner.os }}-pnpm-
+
+      - name: Frozen install
+        run: corepack pnpm install --frozen-lockfile
+
+      - name: Docker preflight
+        run: docker info
+
+      - name: Repository quality gates
+        run: corepack pnpm verify
+
+      - name: Production dependency audit
+        run: corepack pnpm audit:prod
+
+      - name: Install Playwright Chromium
+        run: corepack pnpm exec playwright install --with-deps chromium
+
+      - name: Playwright health smoke
+        run: corepack pnpm test:e2e
+
+      - name: Prepare local staging configuration
+        run: cp infra/docker/staging.env.example .env.staging
+
+      - name: Build and start staging topology
+        run: corepack pnpm staging:up
+
+      - name: Staging health and readiness smoke
+        run: corepack pnpm staging:smoke
+
+      - name: Capture staging diagnostics
+        if: failure()
+        run: |
+          test -f .env.staging || cp infra/docker/staging.env.example .env.staging
+          docker compose --project-directory . --env-file .env.staging -f infra/docker/compose.staging.yml logs --no-color > staging-compose.log 2>&1 || true
+
+      - name: Stop staging topology
+        if: always()
+        run: |
+          test -f .env.staging || cp infra/docker/staging.env.example .env.staging
+          corepack pnpm staging:clean
+
+      - name: Upload Playwright diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          if-no-files-found: ignore
+          name: playwright-diagnostics
+          path: |
+            playwright-report/
+            staging-compose.log
+            test-results/
+          retention-days: 7

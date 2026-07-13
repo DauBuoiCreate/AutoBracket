@@ -1,0 +1,21 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+
+allowBuilds:
+  "@prisma/engines": true
+  cpu-features: false
+  esbuild: true
+  prisma: true
+  protobufjs: false
+  sharp: true
+  ssh2: false
+  unrs-resolver: true
+
+overrides:
+  "@hono/node-server": 1.19.13
+  postcss: 8.5.18
+
+minimumReleaseAgeExclude:
+  - postcss@8.5.18
+  - tsx@4.23.1

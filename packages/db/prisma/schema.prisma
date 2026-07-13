@@ -1,0 +1,241 @@
+generator client {
+  provider               = "prisma-client"
+  output                 = "../src/generated/prisma"
+  engineType             = "client"
+  runtime                = "nodejs"
+  moduleFormat           = "esm"
+  generatedFileExtension = "ts"
+  importFileExtension    = "js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserStatus {
+  ACTIVE
+  LOCKED
+  SUSPENDED
+  DELETION_PENDING
+
+  @@map("user_status")
+}
+
+enum PlatformTier {
+  REGULAR
+  VIP
+  ADMIN
+
+  @@map("platform_tier")
+}
+
+enum VerificationPurpose {
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
+
+  @@map("verification_purpose")
+}
+
+enum SportPresetStatus {
+  DRAFT
+  PUBLISHED
+  RETIRED
+
+  @@map("sport_preset_status")
+}
+
+enum TournamentVisibility {
+  PUBLIC
+  PRIVATE
+
+  @@map("tournament_visibility")
+}
+
+enum TournamentStatus {
+  DRAFT
+  REGISTRATION_OPEN
+  REGISTRATION_CLOSED
+  DRAW_READY
+  DRAWN
+  PUBLISHED
+  LIVE
+  COMPLETED
+  ARCHIVED
+
+  @@map("tournament_status")
+}
+
+enum TournamentRole {
+  OWNER
+  MANAGER
+  SCORER
+  VIEWER
+
+  @@map("tournament_role")
+}
+
+enum ParticipantType {
+  TEAM
+  INDIVIDUAL
+
+  @@map("participant_type")
+}
+
+enum CategoryStatus {
+  ACTIVE
+  ARCHIVED
+
+  @@map("category_status")
+}
+
+model User {
+  id                    String                 @id @default(uuid()) @db.Uuid
+  emailNormalized       String                 @unique @map("email_normalized") @db.VarChar(320)
+  displayName           String                 @map("display_name") @db.VarChar(160)
+  avatarKey             String?                @map("avatar_key") @db.VarChar(512)
+  status                UserStatus             @default(ACTIVE)
+  platformTier          PlatformTier           @default(REGULAR) @map("platform_tier")
+  emailVerifiedAt       DateTime?              @map("email_verified_at") @db.Timestamptz(3)
+  locale                String                 @default("vi") @db.VarChar(16)
+  defaultTimezone       String                 @default("Asia/Ho_Chi_Minh") @map("default_timezone") @db.VarChar(64)
+  createdAt             DateTime               @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt             DateTime               @updatedAt @map("updated_at") @db.Timestamptz(3)
+  version               Int                    @default(1)
+  passwordCredential    PasswordCredential?
+  sessions              Session[]
+  verificationTokens    VerificationToken[]
+  ownedTournaments      Tournament[]           @relation("TournamentOwner")
+  tournamentMemberships TournamentMembership[]
+
+  @@map("users")
+}
+
+model PasswordCredential {
+  userId            String    @id @map("user_id") @db.Uuid
+  passwordHash      String    @map("password_hash") @db.VarChar(512)
+  passwordChangedAt DateTime  @default(now()) @map("password_changed_at") @db.Timestamptz(3)
+  failedCount       Int       @default(0) @map("failed_count")
+  lockedUntil       DateTime? @map("locked_until") @db.Timestamptz(3)
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("password_credentials")
+}
+
+model Session {
+  idHash           String    @id @map("id_hash") @db.VarChar(128)
+  userId           String    @map("user_id") @db.Uuid
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  lastSeenAt       DateTime  @default(now()) @map("last_seen_at") @db.Timestamptz(3)
+  expiresAt        DateTime  @map("expires_at") @db.Timestamptz(3)
+  revokedAt        DateTime? @map("revoked_at") @db.Timestamptz(3)
+  ipPrefixHash     String?   @map("ip_prefix_hash") @db.VarChar(128)
+  userAgentSummary String?   @map("user_agent_summary") @db.VarChar(512)
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt], map: "sessions_user_expiry_idx")
+  @@index([expiresAt], map: "sessions_expiry_idx")
+  @@map("sessions")
+}
+
+model VerificationToken {
+  id              String              @id @default(uuid()) @db.Uuid
+  tokenHash       String              @map("token_hash") @db.VarChar(128)
+  purpose         VerificationPurpose
+  userId          String?             @map("user_id") @db.Uuid
+  emailNormalized String              @map("email_normalized") @db.VarChar(320)
+  expiresAt       DateTime            @map("expires_at") @db.Timestamptz(3)
+  usedAt          DateTime?           @map("used_at") @db.Timestamptz(3)
+  attempts        Int                 @default(0)
+  createdAt       DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
+  user            User?               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([purpose, tokenHash], map: "verification_tokens_purpose_hash_key")
+  @@index([userId, expiresAt], map: "verification_tokens_user_expiry_idx")
+  @@index([emailNormalized, purpose], map: "verification_tokens_email_purpose_idx")
+  @@map("verification_tokens")
+}
+
+model SportPreset {
+  id          String                @id @default(uuid()) @db.Uuid
+  sportCode   String                @map("sport_code") @db.VarChar(64)
+  version     Int
+  name        String                @db.VarChar(160)
+  rules       Json
+  status      SportPresetStatus     @default(DRAFT)
+  effectiveAt DateTime?             @map("effective_at") @db.Timestamptz(3)
+  createdAt   DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
+  tournaments Tournament[]
+  categories  CompetitionCategory[]
+
+  @@unique([sportCode, version], map: "sport_presets_code_version_key")
+  @@index([status, sportCode], map: "sport_presets_status_code_idx")
+  @@map("sport_presets")
+}
+
+model Tournament {
+  id                  String                 @id @default(uuid()) @db.Uuid
+  ownerUserId         String                 @map("owner_user_id") @db.Uuid
+  sportPresetId       String                 @map("sport_preset_id") @db.Uuid
+  name                String                 @db.VarChar(200)
+  slug                String                 @unique @db.VarChar(160)
+  description         String?                @db.Text
+  timezone            String                 @default("Asia/Ho_Chi_Minh") @db.VarChar(64)
+  visibility          TournamentVisibility   @default(PRIVATE)
+  status              TournamentStatus       @default(DRAFT)
+  startAt             DateTime?              @map("start_at") @db.Timestamptz(3)
+  endAt               DateTime?              @map("end_at") @db.Timestamptz(3)
+  location            Json?
+  branding            Json?
+  activePublicationId String?                @map("active_publication_id") @db.Uuid
+  createdAt           DateTime               @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt           DateTime               @updatedAt @map("updated_at") @db.Timestamptz(3)
+  version             Int                    @default(1)
+  archivedAt          DateTime?              @map("archived_at") @db.Timestamptz(3)
+  owner               User                   @relation("TournamentOwner", fields: [ownerUserId], references: [id], onDelete: Restrict)
+  sportPreset         SportPreset            @relation(fields: [sportPresetId], references: [id], onDelete: Restrict)
+  memberships         TournamentMembership[]
+  categories          CompetitionCategory[]
+
+  @@index([ownerUserId, status], map: "tournaments_owner_status_idx")
+  @@index([status, startAt], map: "tournaments_status_start_idx")
+  @@map("tournaments")
+}
+
+model TournamentMembership {
+  id           String         @id @default(uuid()) @db.Uuid
+  tournamentId String         @map("tournament_id") @db.Uuid
+  userId       String         @map("user_id") @db.Uuid
+  role         TournamentRole
+  acceptedAt   DateTime?      @map("accepted_at") @db.Timestamptz(3)
+  revokedAt    DateTime?      @map("revoked_at") @db.Timestamptz(3)
+  createdAt    DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
+  version      Int            @default(1)
+  tournament   Tournament     @relation(fields: [tournamentId], references: [id], onDelete: Restrict)
+  user         User           @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@unique([tournamentId, userId], map: "tournament_memberships_tournament_user_key")
+  @@index([userId, revokedAt], map: "tournament_memberships_user_revoked_idx")
+  @@map("tournament_memberships")
+}
+
+model CompetitionCategory {
+  id                String          @id @default(uuid()) @db.Uuid
+  tournamentId      String          @map("tournament_id") @db.Uuid
+  sportPresetId     String          @map("sport_preset_id") @db.Uuid
+  code              String          @db.VarChar(64)
+  name              String          @db.VarChar(160)
+  participantType   ParticipantType @map("participant_type")
+  eligibilityConfig Json?           @map("eligibility_config")
+  displayOrder      Int             @default(0) @map("display_order")
+  status            CategoryStatus  @default(ACTIVE)
+  createdAt         DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+  version           Int             @default(1)
+  tournament        Tournament      @relation(fields: [tournamentId], references: [id], onDelete: Restrict)
+  sportPreset       SportPreset     @relation(fields: [sportPresetId], references: [id], onDelete: Restrict)
+
+  @@unique([tournamentId, code], map: "competition_categories_tournament_code_key")
+  @@index([tournamentId, status, displayOrder], map: "competition_categories_tournament_status_order_idx")
+  @@map("competition_categories")
+}

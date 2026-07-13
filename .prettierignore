@@ -1,0 +1,11 @@
+.next
+AGENTS.md
+coverage
+dist
+node_modules
+packages/db/src/generated
+Plan
+playwright-report
+pnpm-lock.yaml
+test-results
+gojo-preupgrade-validation.json
