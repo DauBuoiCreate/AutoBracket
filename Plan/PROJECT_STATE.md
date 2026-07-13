@@ -16,7 +16,7 @@
 
 | Phase                       | Trạng thái  | Bằng chứng                                             |
 | --------------------------- | ----------- | ------------------------------------------------------ |
-| P0 - Nền móng               | IN_PROGRESS | `P0-01`, `P0-02` DONE; `P0-03` IN_PROGRESS. Local và hosted push CI evidence xem `handoffs/P0-03-2026-07-13.md`. |
+| P0 - Nền móng               | IN_PROGRESS | `P0-01`, `P0-02` DONE; `P0-03` IN_PROGRESS. Local và hosted push/PR CI evidence xem `handoffs/P0-03-2026-07-13.md`. |
 | P1 - Tài khoản và giải      | NOT_STARTED | -                                                      |
 | P2 - Participant và đăng ký | NOT_STARTED | -                                                      |
 | P3 - Engine và editor       | NOT_STARTED | -                                                      |
@@ -29,11 +29,11 @@
 - Các quyết định `D-001` đến `D-025` trong `13-DECISIONS.md` đang `LOCKED`.
 - Change Request đã duyệt: Không có.
 - ADR đã duyệt: Không có.
-- Blocker hiện tại: Hosted push CI đã pass ở run `29272926312` / SHA `e5c8e2e1b5f486fba737dd255565a132be64f6b0`, nhưng GitHub trả HTTP `403` cho cả ruleset và classic branch protection trên private repository thuộc plan hiện tại. Chưa thể enforce required check cho `P0-014` nếu owner chưa nâng GitHub Pro hoặc phê duyệt phương án visibility khác.
+- Blocker hiện tại: Hosted push run `29272926312` và PR #1 run `29273552409` đều pass, nhưng GitHub trả HTTP `403` cho cả ruleset và classic branch protection trên private repository thuộc plan hiện tại. Chưa thể enforce required check cho `P0-014` nếu owner chưa nâng GitHub Pro hoặc phê duyệt phương án visibility khác.
 
 ## Handoff gần nhất
 
 - Loại: Task handoff `IN_PROGRESS`
-- Kết quả: CI/test/observability/staging shell của `P0-03` đã hoàn tất và kiểm chứng local; hosted push CI pass. Tick `GOV-006`, `P0-012`, `P0-013`, `P0-015`; giữ `P0-014` và `P0-GATE` trống vì check chưa được GitHub enforce.
-- Kiểm tra: GitHub Actions push run `29272926312` / check-run `86894845675` success trong 6m49s; full `pnpm verify` pass với 16 files/76 unit tests, integration 1/1, build và automated startup diagnostic gate cho web/worker/realtime; Playwright 1/1 health trên production build + 2/2 controlled error-boundary trong clean copy; negative CI gate; clean-copy không mang `*.tsbuildinfo`; clean-setup migration zero/seed x2/6 correlated endpoints; production audit; staging 5 healthy services + migration exit 0 + six-endpoint smoke; startup invalid-env container checks đều pass.
+- Kết quả: CI/test/observability/staging shell của `P0-03` đã hoàn tất và kiểm chứng local; hosted push/PR CI pass. Tick `GOV-006`, `P0-012`, `P0-013`, `P0-015`; giữ `P0-014` và `P0-GATE` trống vì check chưa được GitHub enforce.
+- Kiểm tra: GitHub Actions push run `29272926312` / check-run `86894845675` success trong 6m49s và PR #1 run `29273552409` / check-run `86896918512` success trong 6m48s; full `pnpm verify` pass với 16 files/76 unit tests, integration 1/1, build và automated startup diagnostic gate cho web/worker/realtime; Playwright 1/1 health trên production build + 2/2 controlled error-boundary trong clean copy; negative CI gate; clean-copy không mang `*.tsbuildinfo`; clean-setup migration zero/seed x2/6 correlated endpoints; production audit; staging 5 healthy services + migration exit 0 + six-endpoint smoke; startup invalid-env container checks đều pass.
 - Rủi ro còn lại: Chưa có enforced required checks do giới hạn GitHub plan; migration image còn lớn; action/image refs chưa pin immutable SHA/digest; hosted run có annotation runtime Node.js 20 của `actions/*@v4`. Không mở Phase 1.
