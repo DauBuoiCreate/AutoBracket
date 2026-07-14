@@ -29,7 +29,7 @@
 - [x] `P0-013` Structured log, correlation ID, error boundary/readiness.
 - [x] `P0-014` CI frozen install/cache/lint/type/test/build/guard pass.
 - [x] `P0-015` Máy sạch chạy theo README không cần bước ngầm.
-- [ ] `P0-GATE` Gate P0 và handoff được chủ dự án chấp nhận.
+- [x] `P0-GATE` Gate P0 và handoff được chủ dự án chấp nhận.
 
 ## C. P1 - Identity, tier và giải
 
