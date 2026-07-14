@@ -1,11 +1,11 @@
 # CR-2026-001 - Khóa contract bảo mật và API cho P1-01
 
-- Trạng thái: `PROPOSED`
+- Trạng thái: `APPROVED`
 - Người đề xuất: Codex (AI)
-- Người phê duyệt: _(để trống; AI không tự điền)_
+- Người phê duyệt: Chủ dự án
 - Ngày đề xuất: 2026-07-14
 - Target phase/release: `P1-01`
-- Quyết định/requirement bị ảnh hưởng: `D-006`, `D-010`, `D-022`, `D-024`, `REQ-ACC-01..05`, `P1-001..007`, `OQ-06`, `E2E-01`
+- Quyết định/requirement bị ảnh hưởng: `D-006`, `D-010`, `D-022`, `D-024`, `D-026`, `REQ-ACC-01..05`, `P1-001..007`, `OQ-06`, `E2E-A..F`
 
 ## Vấn đề và bằng chứng
 
@@ -227,8 +227,8 @@ Mọi endpoint dưới `/api/v1`; field lạ bị reject. Success body dùng `{ 
 
 ## Quyết định của chủ dự án
 
-- Trạng thái: `PROPOSED | REVIEWING | APPROVED | REJECTED | DEFERRED`
-- Người/ngày:
-- Điều kiện/ghi chú:
+- Trạng thái: `APPROVED`
+- Người/ngày: Chủ dự án / 2026-07-14
+- Điều kiện/ghi chú: Phê duyệt trực tiếp trong task; phải đồng bộ decisions/spec/checklist trước khi bắt đầu code `P1-01`.
 
 > Chỉ chủ dự án được đổi sang APPROVED. Sau approval mới cập nhật decisions/spec và triển khai.

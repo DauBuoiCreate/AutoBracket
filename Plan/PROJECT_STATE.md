@@ -26,10 +26,10 @@
 
 ## Quyết định và thay đổi
 
-- Các quyết định `D-001` đến `D-025` trong `13-DECISIONS.md` đang `LOCKED`.
-- Change Request đã duyệt: Không có.
+- Các quyết định `D-001` đến `D-026` trong `13-DECISIONS.md` đang `LOCKED`.
+- Change Request đã duyệt: `CR-2026-001` được chủ dự án phê duyệt trực tiếp trong task ngày 2026-07-14.
 - ADR đã duyệt: Không có.
-- Blocker hiện tại: Phần code `P1-01` đang dừng theo bộ luật AI vì baseline chưa khóa một số contract schema/API/security và có xung đột phạm vi checklist với `P1-02`/`P4-04`. Đề xuất `Plan/changes/CR-2026-001-p1-01-auth-contract.md` đang ở trạng thái `PROPOSED`; chỉ tiếp tục code sau khi chủ dự án chuyển CR sang `APPROVED` và các decisions/spec/checklist chịu ảnh hưởng đã được cập nhật. Repository ruleset `18903587` tiếp tục enforce `guard-lint-type-test-build` trên `main` mà không có bypass actor.
+- Blocker hiện tại: Không còn blocker governance cho việc bắt đầu code `P1-01`; `CR-2026-001` đã `APPROVED`, D-026 và các spec/checklist chịu ảnh hưởng đã được đồng bộ. Chỉ `P1-01` được phép triển khai; chưa được tick checklist trước khi có test evidence. Repository ruleset `18903587` tiếp tục enforce `guard-lint-type-test-build` trên `main` mà không có bypass actor.
 
 ## Handoff gần nhất
 
