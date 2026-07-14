@@ -29,7 +29,7 @@
 - Các quyết định `D-001` đến `D-025` trong `13-DECISIONS.md` đang `LOCKED`.
 - Change Request đã duyệt: Không có.
 - ADR đã duyệt: Không có.
-- Blocker hiện tại: Không có blocker cho việc bắt đầu `P1-01`. Owner đã chấp nhận `P0-GATE`, cho phép merge PR #1 và mở `P1-01`; repository ruleset `18903587` tiếp tục enforce `guard-lint-type-test-build` trên `main` mà không có bypass actor.
+- Blocker hiện tại: Phần code `P1-01` đang dừng theo bộ luật AI vì baseline chưa khóa một số contract schema/API/security và có xung đột phạm vi checklist với `P1-02`/`P4-04`. Đề xuất `Plan/changes/CR-2026-001-p1-01-auth-contract.md` đang ở trạng thái `PROPOSED`; chỉ tiếp tục code sau khi chủ dự án phê duyệt hoặc chỉnh điều kiện. Repository ruleset `18903587` tiếp tục enforce `guard-lint-type-test-build` trên `main` mà không có bypass actor.
 
 ## Handoff gần nhất
 
