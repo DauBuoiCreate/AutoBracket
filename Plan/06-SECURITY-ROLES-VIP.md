@@ -38,13 +38,17 @@ Permission thực tế còn phụ thuộc tournament/match state, assignment, en
 
 ## 3. Auth controls
 
-- Password tối thiểu 12 ký tự, chấp nhận passphrase; kiểm tra breached/common password nếu provider có thể tích hợp mà không gửi raw password.
-- Argon2id parameters benchmark ở P1 và version trong hash; rehash khi login nếu policy tăng.
-- Email verification/reset token random đủ mạnh, chỉ lưu hash, single-use, TTL và rate limit.
-- Session cookie `HttpOnly`, `Secure`, `SameSite=Lax` hoặc chặt hơn; rotate sau login/password/role-sensitive event.
-- CSRF protection cho cookie-auth mutation; origin check; CORS deny-by-default.
-- Login rate limit theo account + IP prefix; error không enumerate user.
-- Session page hiển thị thiết bị gần đúng và revoke; đổi mật khẩu revoke session khác.
+- Email normalize tại server theo D-026; `email_reservations` giữ unique ownership xuyên `CURRENT/PENDING/FORMER`. Verify link luôn cần đúng current password; reset token của account chưa verify vừa đặt password mới vừa xác minh current email.
+- Password dài 12-128 ký tự, chấp nhận passphrase và reject common password cục bộ; không gửi raw password ra provider.
+- Argon2id PHC v19 dùng `m=65536,t=3,p=4`, salt 16 byte/tag 32 byte, parser allowlist và constant-time compare. Chỉ dùng API async qua semaphore mặc định 2, queue 32/2 giây; overload trả `503` và không tự giảm tham số thiếu CR.
+- Token verify/reset ký HMAC theo version/key ID/purpose/token ID/expiry, chỉ lưu hash, single-use, TTL 24 giờ/60 phút và key ring giữ previous key tối thiểu max TTL. Token đi trong URL fragment, bị xóa trước POST và không vào referrer/log/storage.
+- Production dùng host-only cookie `__Host-autobracket_session` với `Secure`, `HttpOnly`, `SameSite=Lax`, `Path=/`, không `Domain`; local HTTP loopback dùng tên không `__Host-`. Session rotate sau login/password/role-sensitive event; absolute TTL 30 ngày, idle TTL 7 ngày.
+- Mọi identity mutation có `Idempotency-Key` UUID v4, HMAC fingerprint và record cùng transaction; exact retry replay cùng result/cookie nhưng không tạo side effect thứ hai.
+- Login tính cả đúng/sai vào account bucket 10/15 phút và IP bucket 20/15 phút; endpoint kiểm current password có bucket `(user,session)` 5/15 phút. Register 5/15 phút/IP prefix; resend/forgot 3/60 phút/account + 10/IP; verify/reset 10/15 phút/token + 20/IP.
+- Redis outage fail closed cho action tạo credential/session/token hoặc kiểm password; logout/revoke và profile edit không đổi credential vẫn chạy DB transaction/audit; reset token hợp lệ vẫn có recovery path theo D-026.
+- CSRF protection cho mọi cookie-auth mutation: JSON tối đa 32 KiB, exact `Origin == PUBLIC_URL`, CORS deny-by-default. Chỉ tin forwarding header từ proxy CIDR/network-isolated đã strip/overwrite chain client.
+- Mọi authenticated command đọc trạng thái user hiện tại; `LOCKED/SUSPENDED/DELETION_PENDING` và session revoked/expired bị deny ngay.
+- Session page hiển thị thiết bị gần đúng và revoke; password change/reset revoke toàn bộ session liên quan, supersede token mở và hủy pending email atomically.
 - MFA cho admin là release gate; MFA owner/VIP là follow-up sớm.
 
 ## 4. Authorization pattern
@@ -114,6 +118,8 @@ Không truyền role từ client làm nguồn sự thật. Admin support phải 
 ## 10. Audit events bắt buộc
 
 Auth sensitive, role/invite, tier/grant/subscription, create/archive tournament, registration override, draw generate/edit/publish, schedule override, match start/correction/finalize, announcement publish, export, admin action và security setting change.
+
+Auth `P1-01` dùng stable action codes trong `CR-2026-001` cho register/terms/verification/login/logout/session revoke/password/profile/email/rate-limit. Audit chỉ giữ UUID, outcome/reason code, correlation ID và redacted field-name; không lưu email/password/token/cookie/IP/user-agent thô.
 
 Audit before/after phải redacted; hash/token/password không bao giờ vào diff.
 

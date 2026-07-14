@@ -33,14 +33,14 @@
 
 ## C. P1 - Identity, tier và giải
 
-- [ ] `P1-001` Schema user/credential/session/token/grant/membership có migration/test.
+- [ ] `P1-001` Schema user/email-reservation/credential/session/token/idempotency/audit/outbox có migration/test.
 - [ ] `P1-002` Register validate input/password/rate-limit và không tạo account trùng.
 - [ ] `P1-003` Verify email single-use/expiry/resend rate-limit.
 - [ ] `P1-004` Login cookie an toàn, session rotate và auth audit.
-- [ ] `P1-005` Logout current/all sessions; revoke có hiệu lực với API/socket.
+- [ ] `P1-005` Logout current/all sessions; revoked/expired/non-ACTIVE session bị HTTP API và shared DB session resolver từ chối.
 - [ ] `P1-006` Forgot/reset/change password không enumerate và revoke session đúng.
 - [ ] `P1-007` Profile/security/session UI đủ loading/error/empty/mobile.
-- [ ] `P1-008` Entitlement resolver + quota server tests REGULAR/VIP/ADMIN.
+- [ ] `P1-008` Schema grant/subscription skeleton + entitlement resolver + quota server tests REGULAR/VIP/ADMIN.
 - [ ] `P1-009` Admin grant VIP có expiry/reason/audit; không update tier thẳng.
 - [ ] `P1-010` Tournament wizard autosave và resume.
 - [ ] `P1-011` Slug normalize/unique/reserved words.
@@ -49,7 +49,7 @@
 - [ ] `P1-014` Active tournament quota atomic khi request đồng thời.
 - [ ] `P1-015` Archive/restore và public draft visibility đúng.
 - [ ] `P1-016` Clone config giải không lộ/copy PII hoặc score ngoài lựa chọn rõ.
-- [ ] `P1-017` Invitation accept/expire/revoke/email match.
+- [ ] `P1-017` Schema membership/invitation + accept/expire/revoke/email match có migration/test.
 - [ ] `P1-018` Role permission/IDOR/cross-tournament matrix pass.
 - [ ] `P1-019` Owner transfer giữ ít nhất một owner.
 - [ ] `P1-GATE` E2E P1, security review và handoff pass.
@@ -124,7 +124,7 @@
 - [ ] `P4-017` Responsive bracket + accessible list fallback.
 - [ ] `P4-018` Public team/player/match privacy.
 - [ ] `P4-019` SEO/OpenGraph/share/QR/canonical URL.
-- [ ] `P4-020` Socket room authorization và payload allowlist.
+- [ ] `P4-020` Socket room authorization, session revoke/disconnect và payload allowlist.
 - [ ] `P4-021` Sequence/dedupe/gap/resync/reconnect protocol.
 - [ ] `P4-022` Redis adapter multi-instance test.
 - [ ] `P4-023` Stale/offline last-updated UI.

@@ -49,6 +49,7 @@ Hotfix production được phép ưu tiên khôi phục dịch vụ hoặc ngăn
 | Ngày       | ID           | Trạng thái | Nội dung                                             | Người phê duyệt                |
 | ---------- | ------------ | ---------- | ---------------------------------------------------- | ------------------------------ |
 | 2026-07-13 | BASELINE-001 | LOCKED     | Tạo bộ kế hoạch AutoBracket ban đầu và D-001..D-025. | Chủ dự án yêu cầu lập kế hoạch |
+| 2026-07-14 | CR-2026-001  | APPROVED   | Khóa contract bảo mật/API identity `P1-01`; thêm D-026 và điều chỉnh ranh giới checklist liên phase. | Chủ dự án |
 
 ## 7. Thư mục dự kiến
 

@@ -41,13 +41,13 @@
 ### `P1-01` Registration/login/session vertical slice (`L`)
 
 - Outcome: user đăng ký, verify email, login/logout, reset mật khẩu và quản lý session.
-- Scope: identity schema/service/UI/email adapter, rate limit, secure cookies, auth audit, unit/integration/E2E.
-- Acceptance: REQ-ACC-01..05; deny/unverified/expired/reused token/session revoke tests pass.
+- Scope: user/email-reservation/credential/session/token/idempotency/audit/outbox schema; identity service/UI; file/HTTPS email adapter; rate limit, secure cookies, key rotation và unit/integration/E2E theo D-026.
+- Acceptance: `REQ-ACC-01..05`, `P1-001..007` và `E2E-A..F`; deny/unverified/non-ACTIVE, expired/reused/superseded token, idempotency lost-response, session revoke, Argon2 overload và auth privacy tests pass.
 
 ### `P1-02` Hồ sơ, tier và entitlement read model (`M`)
 
 - Outcome: account page hiển thị profile, REGULAR/VIP/admin grant và usage/quota từ server.
-- Scope: grants/subscription skeleton, entitlement resolver, feature gate primitives, admin grant có expiry/reason.
+- Scope: grant/subscription skeleton schema, entitlement resolver, feature gate primitives, admin grant có expiry/reason.
 - Acceptance: REQ-ACC-06..08, REQ-VIP-01..02; không bypass bằng request client sửa tier.
 
 ### `P1-03` Tạo giải và lifecycle đầu tiên (`L`)
@@ -59,7 +59,7 @@
 ### `P1-04` Staff invitation và authorization (`M`)
 
 - Outcome: owner mời manager/scorer/viewer; mỗi role chỉ truy cập đúng capability.
-- Scope: invitation email/token, membership, role change/revoke, policy middleware, audit.
+- Scope: membership/invitation schema + migration, invitation email/token, role change/revoke, policy middleware, audit.
 - Acceptance: REQ-ORG-04; permission matrix deny/IDOR/cross-tournament E2E pass.
 
 ### Gate P1
@@ -162,7 +162,7 @@
 ### `P4-04` Realtime live score + announcements (`L`)
 
 - Outcome: viewer nhận live/status/standing/bracket/announcement, reconnect/resync an toàn.
-- Scope: Socket.IO rooms/auth, Redis adapter, sequence protocol, stale UI, announcement workflow.
+- Scope: Socket.IO rooms/auth, active-session revalidation + revoke/disconnect, Redis adapter, sequence protocol, stale UI, announcement workflow.
 - Acceptance: REQ-PUB-07/08/10; p95 live target ở baseline load, gap/duplicate/reconnect tests pass.
 
 ### Gate P4

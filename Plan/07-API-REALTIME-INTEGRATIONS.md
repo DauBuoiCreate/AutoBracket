@@ -23,7 +23,7 @@
 }
 ```
 
-Các code cốt lõi: `AUTH_REQUIRED`, `FORBIDDEN`, `NOT_FOUND`, `VALIDATION_FAILED`, `VERSION_CONFLICT`, `IDEMPOTENCY_CONFLICT`, `QUOTA_EXCEEDED`, `INVALID_STATE_TRANSITION`, `DRAW_INVALID`, `SCHEDULE_CONFLICT`, `SCORE_RULE_VIOLATION`, `RATE_LIMITED`.
+Các code cốt lõi: `AUTH_REQUIRED`, `INVALID_CREDENTIALS`, `EMAIL_VERIFICATION_REQUIRED`, `ACCOUNT_UNAVAILABLE`, `TOKEN_INVALID_OR_EXPIRED`, `FORBIDDEN`, `NOT_FOUND`, `VALIDATION_FAILED`, `VERSION_CONFLICT`, `IDEMPOTENCY_CONFLICT`, `QUOTA_EXCEEDED`, `INVALID_STATE_TRANSITION`, `DRAW_INVALID`, `SCHEDULE_CONFLICT`, `SCORE_RULE_VIOLATION`, `RATE_LIMITED`, `SERVICE_UNAVAILABLE`.
 
 ## 2. Endpoint inventory MVP
 
@@ -86,6 +86,32 @@ Các code cốt lõi: `AUTH_REQUIRED`, `FORBIDDEN`, `NOT_FOUND`, `VALIDATION_FAI
 - Admin endpoints namespace `/api/v1/admin`, yêu cầu admin MFA và reason cho mutation.
 
 Inventory là contract định hướng; mỗi endpoint chỉ được implement khi phase tương ứng yêu cầu.
+
+### Identity contract P1-01
+
+Tất cả endpoint dưới đây ở `/api/v1`, reject field lạ, private response `Cache-Control: no-store`, mutation yêu cầu `Idempotency-Key` UUID v4 theo D-026:
+
+- `POST /auth/register`: `{ email, password, displayName, acceptTerms: true }` → luôn `202 { data: { accepted: true } }` cho email mới/trùng.
+- `POST /auth/login`: `{ email, password }` → `200 { data: { user: MeDto } }` + rotated session cookie.
+- `POST /auth/logout`: body trống hoặc `{ scope: "current" | "all" }` → `204`, luôn clear cookie hiện tại.
+- `POST /auth/email/verify`: `{ token, password }` → `200 { data: { emailVerified: true, sessionRevoked } }`; password phải khớp credential hiện tại.
+- `POST /auth/email/resend`: `{ email }` → neutral `202 { data: { accepted: true } }`.
+- `POST /auth/password/forgot`: `{ email }` → neutral `202 { data: { accepted: true } }`.
+- `POST /auth/password/reset`: `{ token, newPassword }` → `204`; revoke session, supersede token và pending email; account chưa verify được verify current email bằng proof reset.
+- `POST /auth/password/change`: `{ currentPassword, newPassword }` → `204` + cookie mới; revoke mọi session cũ.
+- `GET /me` trả `MeDto` gồm `id`, `email`, `displayName`, `emailVerified`, `pendingEmail`, `locale`, `defaultTimezone`, `version`; không trả tier/usage trước P1-02.
+- `PATCH /me`: `{ expectedVersion, displayName?, defaultTimezone?, email?, cancelPendingEmail?, currentPassword? }`; email/cancel pending loại trừ nhau và cần current password; conflict trả `409 VERSION_CONFLICT`.
+- `GET /me/sessions?cursor=<opaque>&limit=<1..50>` trả safe device DTO, default 20, sort `(createdAt DESC, publicId DESC)`. Signed cursor chứa cả hai sort value và TTL 15 phút.
+- `DELETE /me/sessions/:publicId` → `204` cho session thuộc user; missing/cross-user cùng `404`; current session đồng thời clear cookie.
+
+Token email/reset có wire format/version/HMAC, fragment transport và TTL theo D-026. Email mới được giữ bằng reservation `PENDING`; swap sang `CURRENT` revoke mọi session và phát security notice tới reservation `FORMER`.
+
+### Identity idempotency P1-01
+
+- Scope authenticated là `(userId, method, route-template, key)`; anonymous dùng subject HMAC từ canonical email/token ID/session hash hoặc IP-prefix theo contract.
+- Record `IN_PROGRESS/COMPLETED` và HMAC fingerprint được ghi cùng business transaction, TTL 24 giờ; raw key/password/token/cookie/email không được lưu.
+- Cùng key khác fingerprint trả `409 IDEMPOTENCY_CONFLICT`; exact retry replay status/body/safe headers. Login/password-change tái tạo đúng cookie cũ từ session public ID mà không tạo session hoặc kéo dài TTL.
+- Completed lookup chỉ replay exact request; nếu không khớp tuyệt đối thì token used/session revoked vẫn bị deny bình thường. Concurrent duplicate và crash/lost-response trước/sau commit là integration gate.
 
 ## 3. Realtime protocol
 
@@ -183,6 +209,10 @@ MVP email: verify, reset password, invitation, role revoked, tournament publishe
 - Dedupe key tránh gửi trùng khi retry.
 - Bounce/complaint cập nhật delivery status; không log nội dung nhạy cảm.
 - In-app notification có read timestamp; public announcement là entity riêng.
+
+Identity email tách `IDENTITY_TOKEN_EMAIL_REQUESTED` khỏi `IDENTITY_SECURITY_EMAIL_REQUESTED`, đều schema version 1 và không mang raw token/recipient. BullMQ dùng `jobId=outboxEventId`; token job chỉ gửi record active/latest, security notice dùng referenced reservation và không áp token rule. Adapter nhận `Idempotency-Key=outboxEventId`.
+
+CI/local staging synthetic dùng file-mailbox atomic theo event ID. HTTPS adapter chỉ dùng validated server endpoint, TLS bắt buộc, không redirect, timeout 5 giây, retry exponential tối đa 5 lần rồi dead-letter/alert; không log body/secret. Provider thật phải được owner cấp trước UAT/staging có user và không muộn hơn Gate P1.
 
 ## 8. Billing adapter
 

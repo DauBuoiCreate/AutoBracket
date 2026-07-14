@@ -4,7 +4,7 @@
 
 | Requirement          | Phase/task chính | Test/evidence bắt buộc                          | Đặc tả nguồn           |
 | -------------------- | ---------------- | ----------------------------------------------- | ---------------------- |
-| REQ-ACC-01..05       | P1-01            | E2E-01, auth integration/token/session deny     | PRD, Security §3       |
+| REQ-ACC-01..05       | P1-01            | E2E-A..F; auth integration/token/session/idempotency/overload deny | PRD, Security §3, API §Identity, CR-2026-001 |
 | REQ-ACC-06..08       | P1-02, P6        | entitlement/privacy export-delete tests         | Security §5/§7         |
 | REQ-ORG-01..03       | P1-03            | wizard resume/slug/quota/timezone E2E           | UX Flow A              |
 | REQ-ORG-04           | P1-04            | role/IDOR/cross-tournament matrix               | Security §2/§4         |
@@ -56,10 +56,12 @@
 | D-022/023      | CI/release gates, observability/privacy checks         |
 | D-024          | `PROJECT_STATE.md`, one in-progress task review        |
 | D-025          | advisor deterministic/no-auto-apply acceptance tests   |
+| D-026          | Auth contract schemas, migration/constraint, idempotency, key-rotation, outbox and E2E-A..F tests |
 
 ## 4. Quy tắc truy vết
 
 - PR/handoff ghi tất cả Requirement/Decision/Checklist IDs chịu ảnh hưởng.
+- `P1-001..007` thuộc DoD `P1-01`; grant chuyển sang `P1-008`, membership/invitation sang `P1-017`, socket revoke/disconnect sang `P4-020` theo `CR-2026-001`.
 - Requirement mới phải thêm row trước khi code.
 - Test bị xóa/đổi oracle phải chỉ ra requirement nào vẫn được bảo vệ.
 - Một requirement không có task/test là khoảng trống và không thể đánh dấu release complete.

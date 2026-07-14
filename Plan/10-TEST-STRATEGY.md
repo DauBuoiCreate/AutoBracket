@@ -54,7 +54,7 @@ Kiểm thử tập trung vào rủi ro làm sai kết quả giải, sai quyền,
 
 ### Security/privacy
 
-- Auth abuse, token reuse/expiry, CSRF, IDOR, role/tier bypass, stored XSS, upload, webhook signature.
+- Auth abuse, pre-account verification takeover, token reuse/expiry/supersede/key rotation, email reservation collision, idempotency lost-response, CSRF, trusted proxy, IDOR, role/tier bypass, stored XSS, upload, webhook signature.
 - Secret/dependency/container scan.
 - Snapshot tests đảm bảo public DTO/event/cache/log không có field private.
 
@@ -89,7 +89,12 @@ Fixture lưu dưới version; thay output cần CR/ADR nếu thay business behav
 
 ## 4. Critical E2E scenarios
 
-- `E2E-01` Register → verify → login → revoke session.
+- `E2E-A` Register → fake email → verify → login → hai device → revoke một session → API deny.
+- `E2E-B` Unverified login deny; resend neutral/rate-limited; token cũ hết hiệu lực.
+- `E2E-C` Forgot/reset neutral; expired/reused token; old password/session fail; new password login được.
+- `E2E-D` Change password cần current password, rotate current/revoke other; logout-all làm mọi context mất quyền.
+- `E2E-E` Sửa profile, request/cancel/retry pending email, stale token fail, verify email mới, security notice địa chỉ cũ và login lại.
+- `E2E-F` Profile/security/session UI có loading/error/empty, mobile 320/768/1024, keyboard/focus/error-summary và accessibility smoke.
 - `E2E-02` Regular tạo 3 giải; giải thứ 4 bị quota; concurrent request không vượt.
 - `E2E-03` Owner mời manager/scorer; role deny/withdraw có hiệu lực.
 - `E2E-04` Import 16 đội → sửa lỗi → approve → seed/pot → lock.
@@ -106,6 +111,9 @@ Fixture lưu dưới version; thay output cần CR/ADR nếu thay business behav
 
 ## 5. Concurrency và idempotency cases
 
+- Retry concurrent/lost-response cho register/login/verify/reset/password-change/email-change chỉ có một commit và replay đúng response/cookie.
+- Hai request reserve cùng normalized email hoặc current/pending cross-flow: chỉ một transaction thành công; migration fail nếu backfill có collision.
+- Token email cũ/new và security notice out-of-order; worker skip token stale nhưng vẫn gửi notice, provider retry không tạo logical email thứ hai.
 - Hai request tạo tournament ở quota boundary.
 - Hai manager publish cùng base revision.
 - Retry draw job sau crash giữa compute và persist.
@@ -137,6 +145,7 @@ Expected behavior luôn là một commit chuẩn hoặc conflict có thể resyn
 | Score commands         |        20/s/match burst |     không duplicate, p95 theo command target |
 | Draw                   |      1.024 participants | giới hạn thời gian/memory được baseline ở P3 |
 | Reconnect storm        |        30% clients/10 s |           server phục hồi, không DB stampede |
+| Auth Argon2 concurrent | 2 active, queue 32       | RSS trong container budget, heartbeat không block; overload `503` đúng contract |
 
 Load test dùng dữ liệu không PII, chạy staging tương đương topology. Nếu target chưa đạt, không giảm target âm thầm; tạo issue/CR hoặc giới hạn capability được owner duyệt.
 

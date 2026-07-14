@@ -14,21 +14,25 @@
 
 ### `users`
 
-`id`, `email_normalized` unique, `display_name`, `avatar_key`, `status`, `platform_tier`, `email_verified_at`, `locale`, `default_timezone`, timestamps, version.
+`id`, `email_normalized` unique, `display_name`, `avatar_key`, `status`, `platform_tier`, `email_verified_at`, `terms_accepted_at`, `terms_version`, `locale`, `default_timezone`, timestamps, version.
 
 Không lưu raw password/token. `platform_tier` là cached/basic state; entitlement service vẫn tính từ grant/subscription.
 
+### `email_reservations`
+
+`id`, `user_id`, `email_normalized`, kind (`CURRENT`, `PENDING`, `FORMER`), timestamps và delivery/retention metadata cần thiết. `UNIQUE(email_normalized)` là guard duy nhất xuyên mọi kind; partial unique index bảo đảm mỗi user có tối đa một `CURRENT` và một `PENDING`. Register/request/cancel/verify/cleanup cập nhật reservation và `User` trong cùng transaction. `FORMER` giữ địa chỉ cũ cho security notice, xóa sau delivery + 24 giờ hoặc safety cap 7 ngày kèm dead-letter alert.
+
 ### `password_credentials`
 
-`user_id` unique FK, `password_hash`, `password_changed_at`, `failed_count`, `locked_until`.
+`user_id` unique FK, `password_hash`, `password_changed_at`, `failed_count`, `locked_until`. Hash dùng PHC Argon2id v19 chính xác theo D-026; không đặt persistent account lock chỉ từ số lần đoán sai.
 
 ### `sessions`
 
-`id_hash`, `user_id`, `created_at`, `last_seen_at`, `expires_at`, `revoked_at`, `ip_prefix_hash`, `user_agent_summary`. Index theo user/expiry; raw token chỉ ở cookie.
+`id_hash`, `public_id` UUID unique, `user_id`, `created_at`, `last_seen_at`, `expires_at`, `revoked_at`, `ip_prefix_hash`, `user_agent_summary`. Index theo user/expiry; raw token chỉ ở cookie và có absolute TTL 30 ngày/idle TTL 7 ngày.
 
 ### `verification_tokens` / `password_reset_tokens`
 
-Chỉ lưu token hash, purpose, user/email, `expires_at`, `used_at`, attempts; unique purpose/hash.
+Chỉ lưu token hash, key ID, purpose, user/reservation, `expires_at`, `used_at`, `superseded_at`, attempts; unique purpose/hash. Token public signed HMAC có version/purpose/expiry, còn DB token single-use là nguồn trạng thái chuẩn. Password change/reset supersede mọi token mở và hủy pending email trong cùng transaction.
 
 ### `subscriptions`, `entitlement_grants`, `usage_counters`
 
@@ -158,9 +162,11 @@ Actor user/service/admin, action code, target type/id, tournament, before/after 
 
 Aggregate type/id/version, event type/schema version, payload, occurred, available, attempts, locked, processed, error. Unique aggregate/version/type hoặc event ID để retry.
 
+Identity dùng hai schema version 1 tách biệt: `IDENTITY_TOKEN_EMAIL_REQUESTED` tham chiếu user/token/reservation + purpose; `IDENTITY_SECURITY_EMAIL_REQUESTED` tham chiếu user/reservation + notice type và không mang token. Payload không chứa recipient hoặc raw token.
+
 ### `idempotency_records`
 
-Actor/scope/key unique, request hash, status, response code/body ref, expiry. Cùng key khác request hash trả conflict.
+Scope subject-HMAC/user + method + route-template + key-HMAC unique, fingerprint HMAC, key ID, trạng thái (`IN_PROGRESS`/`COMPLETED`), safe response/result reference, session public ID khi cần replay cookie, expiry 24 giờ. Không lưu raw key/password/token/cookie/email. Cùng key khác fingerprint trả `IDEMPOTENCY_CONFLICT`.
 
 ## 8. Quan hệ chính
 
@@ -190,6 +196,8 @@ erDiagram
 ## 9. Constraint và index tối thiểu
 
 - Unique normalized email/slug/public ID/provider event ID.
+- `email_reservations.email_normalized` unique xuyên `CURRENT/PENDING/FORMER`; partial unique mỗi user/kind active.
+- Unique session `public_id`, auth token hash/purpose và idempotency scope + key-HMAC.
 - Unique participant trong active registration/draw revision.
 - Stage và registration phải tham chiếu category thuộc cùng tournament; service/domain kiểm và integration test transaction.
 - Unique staff membership, group slot, bracket side, score sequence, draw revision number.
@@ -204,12 +212,13 @@ erDiagram
 - Mọi destructive migration theo expand → backfill → switch → contract, có metric và backup.
 - Seed sport preset idempotent theo sport/version.
 - Raw import file mặc định xóa sau 30 ngày; export link hết hạn ngắn.
-- Session/token dọn định kỳ; audit và score event giữ theo policy pháp lý/kinh doanh, tối thiểu được nêu trong NFR.
+- Session/token/idempotency record dọn định kỳ nhưng không trước TTL contract; former email reservation tuân theo delivery + 24 giờ/safety cap 7 ngày. Audit và score event giữ theo policy pháp lý/kinh doanh, tối thiểu được nêu trong NFR.
 - Xóa account pseudonymize actor nơi audit cần giữ; không phá lịch sử giải.
 
 ## 11. Data acceptance gate
 
 - Schema diagram và migration review khớp domain invariant.
+- Test direct DB + concurrency chứng minh email reservation unique xuyên flow, session public ID/token/idempotency không trùng và migration backfill fail khi có collision.
 - Test constraint chứng minh không thể tạo participant trùng, score sequence trùng, publication active kép.
 - Transaction test chứng minh command + audit + outbox atomic.
 - Replay score events và rebuild standings cho checksum giống nhau.

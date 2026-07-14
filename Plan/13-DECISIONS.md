@@ -29,6 +29,7 @@ Tất cả quyết định dưới đây có trạng thái `LOCKED` kể từ 20
 | D-023 | Observability gồm structured logs, error tracking, metrics và audit log; không log password/token/PII nhạy cảm.                                                        | Vận hành và bảo mật.                                                                                             |
 | D-024 | Chỉ một task chính `IN_PROGRESS`; không bắt đầu phase sau khi gate phase trước chưa pass.                                                                              | Giảm work-in-progress và lệch kế hoạch.                                                                          |
 | D-025 | Gợi ý cấu hình MVP là rule-based, deterministic, explainable và chỉ áp dụng khi user xác nhận; generative AI không thuộc MVP.                                          | Hữu ích nhưng không làm thay đổi giải âm thầm.                                                                   |
+| D-026 | Contract identity `P1-01` tuân theo `CR-2026-001`: email reservation duy nhất, Argon2id PHC, DB session cookie, signed token/cursor, idempotency, rate-limit, auth audit và transactional email outbox. | Khóa một implementation contract bảo mật có thể kiểm thử; ngăn agent tự chọn schema/API/security khác sau approval. |
 
 ## Default quota ban đầu
 
