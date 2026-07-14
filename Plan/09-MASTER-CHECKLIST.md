@@ -27,7 +27,7 @@
 - [x] `P0-011` Test DB isolation và Redis integration smoke pass.
 - [x] `P0-012` Vitest/fast-check/Playwright/Testcontainers harness chạy sample.
 - [x] `P0-013` Structured log, correlation ID, error boundary/readiness.
-- [ ] `P0-014` CI frozen install/cache/lint/type/test/build/guard pass.
+- [x] `P0-014` CI frozen install/cache/lint/type/test/build/guard pass.
 - [x] `P0-015` Máy sạch chạy theo README không cần bước ngầm.
 - [ ] `P0-GATE` Gate P0 và handoff được chủ dự án chấp nhận.
 
